@@ -1,0 +1,1 @@
+{"Modules":[{"Key":"","Source":"","Dir":"."},{"Key":"alert_rules","Source":"../../modules/alert_rules","Dir":"../../modules/alert_rules"},{"Key":"kubernetes_alerts","Source":"../../modules/kubernetes_alerts","Dir":"../../modules/kubernetes_alerts"},{"Key":"notification_channels","Source":"../../modules/notification_channels","Dir":"../../modules/notification_channels"}]}
