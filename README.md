@@ -1,28 +1,26 @@
 # Terraform Project for Grafana - Kubernetes Alerts
 
-This project automatically deploys Prometheus alerts and recording rules in Grafana from source YAML files.
+This project deploys Prometheus alerts and recording rules in Grafana using Terraform modules. The QA environment is fully operational and serves as the reference for other environments.
 
 ## 🏗️ Architecture
 
 ```
 grafana-tf/
 ├── environments/           # Environment-specific configurations
-│   ├── qa/                # Qualification environment
+│   ├── qa/                # Qualification environment (operational)
 │   │   ├── main.tf        # Main configuration
 │   │   ├── variables.tf   # Variables
 │   │   ├── terraform.tfvars # Variable values
-│   │   └── generated_variables.tfvars # Generated variables from YAML
-│   ├── prod/              # Production (to be created)
-│   └── lab/               # Laboratory (to be created)
+│   │   └── generated_variables.tfvars # Alert and rule definitions
+│   ├── prod/              # Production (copy tfvars from qa)
+│   └── lab/               # Laboratory (copy tfvars from qa)
 ├── modules/               # Reusable Terraform modules
 │   ├── alert_rules/       # Module for alert rules
 │   ├── kubernetes_alerts/ # Kubernetes specialized module
 │   └── notification_channels/ # Module for notification channels
-├── yaml_files/            # Source YAML files
-│   ├── prometheus_alerts.yaml
-│   └── prometheus_rules.yaml
-└── script/                # Utility scripts
-    └── yaml_to_terraform.py # YAML → Terraform conversion
+└── yaml_files/            # Source YAML files (reference only)
+    ├── prometheus_alerts.yaml
+    └── prometheus_rules.yaml
 ```
 
 ## 🚀 Installation and Configuration
@@ -30,41 +28,30 @@ grafana-tf/
 ### Prerequisites
 
 1. **Terraform** >= 1.0
-2. **Python** >= 3.8 with PyYAML
-3. **Grafana** >= 9.0 with API enabled
-4. **Grafana API Token** with write permissions
+2. **Grafana** >= 9.0 with API enabled
+3. **Grafana API Token** with write permissions
 
 ### Configuration
 
-1. **Clone and prepare the environment:**
+1. **Clone the repository:**
 ```bash
 git clone <repository>
 cd grafana-tf
-python3 -m venv venv
-source venv/bin/activate
-pip install PyYAML
 ```
 
 2. **Configure Grafana authentication:**
-```bash
-# Edit the terraform.tfvars file
-cp environments/qa/terraform.tfvars.example environments/qa/terraform.tfvars
-```
 
-Modify `environments/qa/terraform.tfvars`:
+Edit `environments/qa/terraform.tfvars` (or copy to other environments):
 ```hcl
 grafana_url = "http://your-grafana:3000"
 grafana_auth_token = "your-api-token"
 ```
 
-3. **Generate Terraform variables:**
-```bash
-python script/yaml_to_terraform.py qa
-```
-
 ## 📊 Usage
 
-### Deployment
+### QA Environment (Reference)
+
+The QA environment is fully configured and operational:
 
 ```bash
 cd environments/qa
@@ -73,16 +60,58 @@ terraform plan -var-file="terraform.tfvars" -var-file="generated_variables.tfvar
 terraform apply -var-file="terraform.tfvars" -var-file="generated_variables.tfvars"
 ```
 
-### Updating alerts
+### New Environment Setup
 
-1. Modify YAML files in `yaml_files/`
-2. Regenerate variables:
+To deploy to a new environment (prod, lab):
+
+1. **Copy configuration files from QA:**
 ```bash
-python script/yaml_to_terraform.py qa
+# For production
+cp environments/qa/main.tf environments/prod/
+cp environments/qa/variables.tf environments/prod/
+cp environments/qa/terraform.tfvars environments/prod/
+cp environments/qa/generated_variables.tfvars environments/prod/
+
+# For lab
+cp environments/qa/main.tf environments/lab/
+cp environments/qa/variables.tf environments/lab/
+cp environments/qa/terraform.tfvars environments/lab/
+cp environments/qa/generated_variables.tfvars environments/lab/
 ```
-3. Apply changes:
+
+2. **Update environment-specific values:**
+Edit the `terraform.tfvars` in the target environment to update:
+- `grafana_url`
+- `grafana_auth_token`
+- Any environment-specific configurations
+
+3. **Deploy:**
+```bash
+cd environments/[prod|lab]
+terraform init
+terraform plan -var-file="terraform.tfvars" -var-file="generated_variables.tfvars"
+terraform apply -var-file="terraform.tfvars" -var-file="generated_variables.tfvars"
+```
+
+### Updating Alerts and Rules
+
+To update alerts or rules across environments:
+
+1. **Modify the reference configuration** in `environments/qa/generated_variables.tfvars`
+2. **Test in QA:**
 ```bash
 cd environments/qa
+terraform plan -var-file="terraform.tfvars" -var-file="generated_variables.tfvars"
+terraform apply -var-file="terraform.tfvars" -var-file="generated_variables.tfvars"
+```
+3. **Copy to other environments:**
+```bash
+cp environments/qa/generated_variables.tfvars environments/prod/
+cp environments/qa/generated_variables.tfvars environments/lab/
+```
+4. **Apply to other environments:**
+```bash
+cd environments/prod
 terraform plan -var-file="terraform.tfvars" -var-file="generated_variables.tfvars"
 terraform apply -var-file="terraform.tfvars" -var-file="generated_variables.tfvars"
 ```
@@ -92,7 +121,7 @@ terraform apply -var-file="terraform.tfvars" -var-file="generated_variables.tfva
 ### `kubernetes_alerts`
 - Creates Grafana folders organized by alert type
 - Generates alert and recording rule groups
-- Automatically processes YAML files
+- Processes predefined alert configurations
 
 ### `alert_rules`
 - Generic module for creating alert rules
@@ -104,9 +133,9 @@ terraform apply -var-file="terraform.tfvars" -var-file="generated_variables.tfva
 - Support for notification policies
 - Alert resolution management
 
-## 📝 Generated Content
+## 📝 Current Content
 
-The `yaml_to_terraform.py` script automatically generates:
+The system includes:
 
 - **60 alert rules** distributed across 4 categories:
   - Kubernetes Applications (25 rules)
@@ -176,20 +205,14 @@ Error: [GET /folders/{folder_uid}][401] getFolderByUidUnauthorized
 - API token is valid and has proper permissions
 - Grafana organization is correct
 
-### Terraform validation error
-```
-Error: Invalid multi-line string
-```
-**Solution:** Regenerate variables:
-```bash
-python script/yaml_to_terraform.py qa
-```
-
 ### Module not found
 ```
 Error: Module not found
 ```
 **Solution:** Run `terraform init` in the environment directory.
+
+### State management
+If you encounter state conflicts between environments, ensure each environment has its own state file and backend configuration.
 
 ## 📋 TODO
 
@@ -198,14 +221,16 @@ Error: Module not found
 - [ ] Implement Grafana dashboards
 - [ ] Add automated tests
 - [ ] Document custom metrics
+- [ ] Set up remote state backend for production
 
 ## 🤝 Contributing
 
 1. Fork the project
 2. Create a feature branch (`git checkout -b feature/new-feature`)
-3. Commit (`git commit -am 'Add new feature'`)
-4. Push (`git push origin feature/new-feature`)
-5. Create a Pull Request
+3. Test changes in QA environment first
+4. Commit (`git commit -am 'Add new feature'`)
+5. Push (`git push origin feature/new-feature`)
+6. Create a Pull Request
 
 ## 📄 License
 
