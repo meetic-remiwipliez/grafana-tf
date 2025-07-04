@@ -1,42 +1,42 @@
-# Projet Terraform pour Grafana - Alertes Kubernetes
+# Terraform Project for Grafana - Kubernetes Alerts
 
-Ce projet permet de déployer automatiquement des alertes et règles d'enregistrement Prometheus dans Grafana à partir de fichiers YAML sources.
+This project automatically deploys Prometheus alerts and recording rules in Grafana from source YAML files.
 
 ## 🏗️ Architecture
 
 ```
 grafana-tf/
-├── environments/           # Configurations par environnement
-│   ├── qa/                # Environnement de qualification
-│   │   ├── main.tf        # Configuration principale
+├── environments/           # Environment-specific configurations
+│   ├── qa/                # Qualification environment
+│   │   ├── main.tf        # Main configuration
 │   │   ├── variables.tf   # Variables
-│   │   ├── terraform.tfvars # Valeurs des variables
-│   │   └── generated_variables.tfvars # Variables générées depuis YAML
-│   ├── prod/              # Production (à créer)
-│   └── lab/               # Laboratoire (à créer)
-├── modules/               # Modules Terraform réutilisables
-│   ├── alert_rules/       # Module pour les règles d'alertes
-│   ├── kubernetes_alerts/ # Module spécialisé Kubernetes
-│   └── notification_channels/ # Module pour les canaux de notification
-├── yaml_files/            # Fichiers YAML sources
+│   │   ├── terraform.tfvars # Variable values
+│   │   └── generated_variables.tfvars # Generated variables from YAML
+│   ├── prod/              # Production (to be created)
+│   └── lab/               # Laboratory (to be created)
+├── modules/               # Reusable Terraform modules
+│   ├── alert_rules/       # Module for alert rules
+│   ├── kubernetes_alerts/ # Kubernetes specialized module
+│   └── notification_channels/ # Module for notification channels
+├── yaml_files/            # Source YAML files
 │   ├── prometheus_alerts.yaml
 │   └── prometheus_rules.yaml
-└── script/                # Scripts utilitaires
-    └── yaml_to_terraform.py # Conversion YAML → Terraform
+└── script/                # Utility scripts
+    └── yaml_to_terraform.py # YAML → Terraform conversion
 ```
 
-## 🚀 Installation et Configuration
+## 🚀 Installation and Configuration
 
-### Prérequis
+### Prerequisites
 
 1. **Terraform** >= 1.0
-2. **Python** >= 3.8 avec PyYAML
-3. **Grafana** >= 9.0 avec API activée
-4. **Token API Grafana** avec permissions d'écriture
+2. **Python** >= 3.8 with PyYAML
+3. **Grafana** >= 9.0 with API enabled
+4. **Grafana API Token** with write permissions
 
 ### Configuration
 
-1. **Cloner et préparer l'environnement :**
+1. **Clone and prepare the environment:**
 ```bash
 git clone <repository>
 cd grafana-tf
@@ -45,26 +45,26 @@ source venv/bin/activate
 pip install PyYAML
 ```
 
-2. **Configurer l'authentification Grafana :**
+2. **Configure Grafana authentication:**
 ```bash
-# Éditer le fichier terraform.tfvars
+# Edit the terraform.tfvars file
 cp environments/qa/terraform.tfvars.example environments/qa/terraform.tfvars
 ```
 
-Modifier `environments/qa/terraform.tfvars` :
+Modify `environments/qa/terraform.tfvars`:
 ```hcl
-grafana_url = "http://votre-grafana:3000"
-grafana_auth_token = "votre-token-api"
+grafana_url = "http://your-grafana:3000"
+grafana_auth_token = "your-api-token"
 ```
 
-3. **Générer les variables Terraform :**
+3. **Generate Terraform variables:**
 ```bash
 python script/yaml_to_terraform.py qa
 ```
 
-## 📊 Utilisation
+## 📊 Usage
 
-### Déploiement
+### Deployment
 
 ```bash
 cd environments/qa
@@ -73,14 +73,14 @@ terraform plan -var-file="terraform.tfvars" -var-file="generated_variables.tfvar
 terraform apply -var-file="terraform.tfvars" -var-file="generated_variables.tfvars"
 ```
 
-### Mise à jour des alertes
+### Updating alerts
 
-1. Modifier les fichiers YAML dans `yaml_files/`
-2. Régénérer les variables :
+1. Modify YAML files in `yaml_files/`
+2. Regenerate variables:
 ```bash
 python script/yaml_to_terraform.py qa
 ```
-3. Appliquer les changements :
+3. Apply changes:
 ```bash
 cd environments/qa
 terraform plan -var-file="terraform.tfvars" -var-file="generated_variables.tfvars"
@@ -90,45 +90,45 @@ terraform apply -var-file="terraform.tfvars" -var-file="generated_variables.tfva
 ## 📁 Modules
 
 ### `kubernetes_alerts`
-- Crée les dossiers Grafana organisés par type d'alerte
-- Génère les groupes de règles d'alertes et d'enregistrement
-- Traite automatiquement les fichiers YAML
+- Creates Grafana folders organized by alert type
+- Generates alert and recording rule groups
+- Automatically processes YAML files
 
 ### `alert_rules`
-- Module générique pour créer des règles d'alertes
-- Support des annotations et labels personnalisés
-- Configuration flexible des seuils
+- Generic module for creating alert rules
+- Support for custom annotations and labels
+- Flexible threshold configuration
 
 ### `notification_channels`
-- Configuration des canaux de notification (email, Slack, etc.)
-- Support des politiques de notification
-- Gestion des résolutions d'alertes
+- Configuration of notification channels (email, Slack, etc.)
+- Support for notification policies
+- Alert resolution management
 
-## 📝 Contenu Généré
+## 📝 Generated Content
 
-Le script `yaml_to_terraform.py` génère automatiquement :
+The `yaml_to_terraform.py` script automatically generates:
 
-- **60 règles d'alertes** réparties en 4 catégories :
-  - Applications Kubernetes (25 règles)
-  - Ressources Kubernetes (9 règles)
-  - Stockage Kubernetes (5 règles)  
-  - Système Kubernetes (21 règles)
+- **60 alert rules** distributed across 4 categories:
+  - Kubernetes Applications (25 rules)
+  - Kubernetes Resources (9 rules)
+  - Kubernetes Storage (5 rules)  
+  - Kubernetes System (21 rules)
 
-- **71 règles d'enregistrement** pour :
-  - Disponibilité API Server
-  - Burn rate API Server
-  - Histogrammes API Server
-  - Métriques générales K8s
+- **71 recording rules** for:
+  - API Server availability
+  - API Server burn rate
+  - API Server histograms
+  - General K8s metrics
   - Scheduler, Nodes, Kubelet
 
-## 🔧 Configuration Avancée
+## 🔧 Advanced Configuration
 
-### Variables Personnalisées
+### Custom Variables
 
-Dans `terraform.tfvars`, vous pouvez configurer :
+In `terraform.tfvars`, you can configure:
 
 ```hcl
-# Canaux de notification
+# Notification channels
 notification_channels = {
   slack_alerts = {
     name         = "slack-alerts"
@@ -143,18 +143,18 @@ notification_channels = {
   }
 }
 
-# Règles d'alertes personnalisées
+# Custom alert rules
 alert_rules = {
   custom_alert = {
     name        = "Service Down"
-    description = "Un service critique est indisponible"
+    description = "A critical service is unavailable"
     query       = "up{job=\"my-service\"} == 0"
     duration    = "5m"
   }
 }
 ```
 
-### Tags et Labels
+### Tags and Labels
 
 ```hcl
 common_tags = {
@@ -165,48 +165,48 @@ common_tags = {
 }
 ```
 
-## 🔍 Dépannage
+## 🔍 Troubleshooting
 
-### Erreur d'authentification Grafana
+### Grafana authentication error
 ```
 Error: [GET /folders/{folder_uid}][401] getFolderByUidUnauthorized
 ```
-**Solution :** Vérifier que :
-- Grafana est accessible à l'URL configurée
-- Le token API est valide et a les bonnes permissions
-- L'organisation Grafana est correcte
+**Solution:** Verify that:
+- Grafana is accessible at the configured URL
+- API token is valid and has proper permissions
+- Grafana organization is correct
 
-### Erreur de validation Terraform
+### Terraform validation error
 ```
 Error: Invalid multi-line string
 ```
-**Solution :** Régénérer les variables :
+**Solution:** Regenerate variables:
 ```bash
 python script/yaml_to_terraform.py qa
 ```
 
-### Module non trouvé
+### Module not found
 ```
 Error: Module not found
 ```
-**Solution :** Exécuter `terraform init` dans le répertoire de l'environnement.
+**Solution:** Run `terraform init` in the environment directory.
 
 ## 📋 TODO
 
-- [ ] Créer les environnements `prod` et `lab`
-- [ ] Ajouter support pour d'autres providers (AWS CloudWatch, etc.)
-- [ ] Implémenter les dashboards Grafana
-- [ ] Ajouter tests automatisés
-- [ ] Documentation des métriques custom
+- [ ] Create `prod` and `lab` environments
+- [ ] Add support for other providers (AWS CloudWatch, etc.)
+- [ ] Implement Grafana dashboards
+- [ ] Add automated tests
+- [ ] Document custom metrics
 
-## 🤝 Contribution
+## 🤝 Contributing
 
-1. Fork le projet
-2. Créer une branche feature (`git checkout -b feature/nouvelle-fonctionnalite`)
-3. Commit (`git commit -am 'Ajout nouvelle fonctionnalité'`)
-4. Push (`git push origin feature/nouvelle-fonctionnalite`)
-5. Créer une Pull Request
+1. Fork the project
+2. Create a feature branch (`git checkout -b feature/new-feature`)
+3. Commit (`git commit -am 'Add new feature'`)
+4. Push (`git push origin feature/new-feature`)
+5. Create a Pull Request
 
-## 📄 Licence
+## 📄 License
 
-Ce projet est sous licence MIT. Voir le fichier `LICENSE` pour plus de détails.
+This project is licensed under the MIT License. See the `LICENSE` file for more details.
